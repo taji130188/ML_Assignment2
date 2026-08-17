@@ -34,7 +34,7 @@ This is a **binary classification** problem.
 
 ## c. GitHub Repository Link
 
-> **`<< PASTE YOUR GITHUB REPOSITORY LINK HERE AFTER YOU PUSH THIS PROJECT >>`**
+> **`<<(https://github.com/taji130188/ML_Assignment2) >>`**
 
 Repository contains: `app.py`, `requirements.txt`, `README.md`,
 `test_data.csv`, and the `model/` folder (training script + saved model
