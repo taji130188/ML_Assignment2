@@ -8,6 +8,7 @@ Features:
   b. Model selection dropdown (5 trained classifiers)
   c. Display of evaluation metrics (Accuracy, AUC, Precision, Recall, F1, MCC)
   d. Confusion matrix + full classification report
+  e. ROC curve comparison across all 5 models
 """
 
 import streamlit as st
@@ -21,7 +22,8 @@ import seaborn as sns
 
 from sklearn.metrics import (
     accuracy_score, roc_auc_score, precision_score, recall_score,
-    f1_score, matthews_corrcoef, confusion_matrix, classification_report
+    f1_score, matthews_corrcoef, confusion_matrix, classification_report,
+    roc_curve
 )
 
 st.set_page_config(page_title="ML Assignment 2 — Classifier Demo", layout="wide")
@@ -35,6 +37,15 @@ MODEL_FILES = {
     "kNN": "knn.pkl",
     "Naive Bayes": "naive_bayes.pkl",
     "Random Forest (Ensemble)": "random_forest_ensemble.pkl",
+}
+
+# Fixed colors so each model keeps the same color across all charts
+MODEL_COLORS = {
+    "Logistic Regression": "#2ca02c",
+    "Decision Tree": "#ff7f0e",
+    "kNN": "#1f77b4",
+    "Naive Bayes": "#9467bd",
+    "Random Forest (Ensemble)": "#d62728",
 }
 
 
@@ -182,16 +193,51 @@ if has_labels:
         )
         report_df = pd.DataFrame(report).transpose().round(3)
         st.dataframe(report_df, use_container_width=True)
+
+    # -------------------------------------------------------------
+    # 5. ROC Curve — All Models
+    # -------------------------------------------------------------
+    st.subheader("5️⃣ ROC Curve — All Models")
+    st.write(
+        "Receiver Operating Characteristic curves for all 5 trained models, "
+        "computed on the currently loaded data, with each model's AUC shown "
+        "in the legend."
+    )
+
+    fig_roc, ax_roc = plt.subplots(figsize=(7, 5.5))
+    ax_roc.plot([0, 1], [0, 1], linestyle="--", color="grey", label="Random (AUC=0.50)")
+
+    for name, mdl in models.items():
+        if hasattr(mdl, "predict_proba"):
+            proba = mdl.predict_proba(X_input_scaled)[:, 1]
+        else:
+            proba = mdl.predict(X_input_scaled)
+        fpr, tpr, _ = roc_curve(y_true, proba)
+        model_auc = roc_auc_score(y_true, proba)
+        ax_roc.plot(
+            fpr, tpr,
+            label=f"{name} (AUC={model_auc:.4f})",
+            color=MODEL_COLORS.get(name, None),
+            linewidth=2,
+        )
+
+    ax_roc.set_xlabel("False Positive Rate")
+    ax_roc.set_ylabel("True Positive Rate")
+    ax_roc.set_title("ROC Curves — Breast Cancer Classification")
+    ax_roc.legend(loc="lower right", fontsize=8)
+    st.pyplot(fig_roc)
+
 else:
     st.warning(
-        "Uploaded CSV has no `diagnosis` column, so ground-truth metrics and "
-        "the confusion matrix can't be computed — predictions only are shown above."
+        "Uploaded CSV has no `diagnosis` column, so ground-truth metrics, the "
+        "confusion matrix, and ROC curves can't be computed — predictions only "
+        "are shown above."
     )
 
 # ---------------------------------------------------------------------
-# 5. Full model comparison table
+# 6. Full model comparison table
 # ---------------------------------------------------------------------
-st.subheader("5️⃣ All Models — Comparison Table (on held-out test split)")
+st.subheader("6️⃣ All Models — Comparison Table (on held-out test split)")
 st.dataframe(metrics_table.set_index("ML Model Name"), use_container_width=True)
 
 st.markdown("---")
